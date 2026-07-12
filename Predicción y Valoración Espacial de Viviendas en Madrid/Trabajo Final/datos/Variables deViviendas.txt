@@ -1,0 +1,28 @@
+##### Variables de la Vivienda #####
+ 
+house.price    house price (euro/m2)
+good.cond      Indicator variable for good condition
+built.area     Number of square meters of built-up área
+type.house     Type of house (apartment, Studio, House, Toop-floor)
+age            Age of the house/apart.
+floor          fllor level (ground, 1st, 2nd....) 
+baths          number of bathrooms  
+garage         parking space
+elevator
+air.cond       central air conditioning
+swimming.pool
+
+
+
+##### Variables del Area#####
+
+RP             Environmental conditions perceived (Subjective air pollution indicator)
+shopping       shopping área
+historical     Historical quarter
+retired        Percentage of retired people in the district
+children       Percentage of children under 14 years old in the district
+immigrants     Percentage of immigrants in the district
+crime          Crime rate in the district
+
+ 
+ 
