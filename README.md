@@ -10,9 +10,9 @@ Mi enfoque principal es transformar datos complejos en conocimiento accionable, 
 A lo largo de mis proyectos, aplico y combino diversas herramientas y metodologías analíticas:
 
 * **Lenguajes de Programación:** Python, R, SAS, SQL.
-* **Análisis y Modelado:** Estadística descriptiva e inferencial, Análisis Multivariante, Series Temporales, Econometría, Análisis Espacial.
-* **Machine Learning:** Modelos de clasificación y regresión, Aprendizaje supervisado y no supervisado (Clustering, Random Forest, XGBoost).
-* **Ingeniería de Datos (ETL):** Limpieza de bases de datos relacionales, manejo de valores atípicos (*outliers*), lectura y procesamiento de ficheros planos masivos.
+* **Análisis y Modelado:** estadística descriptiva e inferencial, análisis multivariante, series temporales, econometría, análisis espacial.
+* **Machine Learning:** modelos de clasificación y regresión, aprendizaje supervisado y no supervisado (Clustering, Random Forest, XGBoost, ...).
+* **Ingeniería de Datos (ETL):** limpieza de bases de datos relacionales, manejo de valores atípicos (*outliers*), lectura y procesamiento de ficheros planos masivos.
 
 ---
 
