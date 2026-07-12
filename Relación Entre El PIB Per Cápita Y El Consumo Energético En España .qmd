@@ -1,0 +1,470 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+## 0) Preparación de la base de datos
+
+```{r}
+######################################################################
+######### BASE 2: PIB vs Energía (múltiples países)###################
+######################################################################
+
+# Instalar si hace falta
+# install.packages(c("WDI", "dplyr", "tidyr"))
+
+library(WDI)
+library(dplyr)
+library(tidyr)
+
+##Paso 2. Descargar indicadores del Banco Mundial
+# Lista de países (elige uno de los tres siguientes)
+paises <- c("ES")  # España, Alemania, EE.UU.
+
+energia_pib_multi <- WDI(
+  country = paises,
+  indicator = c("pib_pc" = "NY.GDP.PCAP.KD",
+                "energia_pc" = "EG.USE.PCAP.KG.OE"),
+  start = 1990, end = 2023
+)
+
+
+
+```
+
+```{r}
+
+##Paso 3. Limpieza y estructura
+energia_pib_multi <- energia_pib_multi |> 
+  arrange(country, year) |> 
+  dplyr::select(country, year, pib_pc, energia_pc) |> 
+  na.omit()
+
+# Primeras filas
+head(energia_pib_multi)
+
+# Últimas filas
+tail(energia_pib_multi)
+
+# Número de observaciones por país
+table(energia_pib_multi$country)
+
+# Resumen general
+summary(energia_pib_multi)
+
+```
+
+```{r}
+
+##Paso 4. Verificación rápida
+# Primeras filas
+head(energia_pib_multi)
+
+# Últimas filas
+tail(energia_pib_multi)
+
+# Número de observaciones por país
+table(energia_pib_multi$country)
+
+# Resumen general
+summary(energia_pib_multi)
+
+##Paso 5. Gráfico exploratorio
+library(ggplot2)
+
+ggplot(energia_pib_multi, aes(x = year)) +
+  geom_line(aes(y = pib_pc, color = "PIB per cápita")) +
+  geom_line(aes(y = energia_pc, color = "Energía per cápita")) +
+  facet_wrap(~country, scales = "free_y") +
+  labs(title = "PIB y Consumo energético per cápita (1990–2023)",
+       y = "Valor", x = "Año", color = "") +
+  theme_minimal()
+
+write.csv(energia_pib_multi, "energia_pib_multi.csv", row.names = FALSE)
+
+```
+
+```{r}
+
+#############################################################
+## VARIABLES ADICIONALES (RENOVABLES, FÓSILES, POBLACIÓN) ##
+#############################################################
+
+# --- VARIABLES ADICIONALES (1990–2023 descargadas, recorte final hasta 2016) ---
+library(WDI)
+library(dplyr)
+library(ggplot2)
+
+# Reutilizamos el vector de países y años
+# (asegúrate de tener definido previamente `paises` y `energia_pib_multi`)
+
+# Descargar variables adicionales
+extra_vars <- WDI(
+  country = paises,
+  indicator = c(
+    "fossil_share"    = "EG.USE.COMM.FO.ZS",   # Uso de combustibles fósiles (% del total)
+    "renewable_share" = "EG.ELC.RNEW.ZS",      # Electricidad renovable (% del total)
+    "population"      = "SP.POP.TOTL"          # Población total
+  ),
+  start = 1990, end = 2023
+) |> 
+  arrange(country, year)
+
+
+```
+
+```{r}
+
+# Unir con la base original
+energia_pib_ext <- energia_pib_multi |> 
+  left_join(extra_vars, by = c("country", "year"))
+
+# Eliminar ceros falsos antes del filtrado
+energia_pib_ext <- energia_pib_ext |> 
+  mutate(
+    fossil_share = ifelse(fossil_share == 0, NA, fossil_share),
+    renewable_share = ifelse(renewable_share == 0, NA, renewable_share)
+  )
+
+```
+
+```{r}
+# Guardar versión completa (con huecos en años recientes)
+write.csv(energia_pib_ext, "energia_pib_multi_ext_completa.csv", row.names = FALSE)
+
+
+# Filtrar solo hasta 2016 y años con datos completos
+energia_pib_final <- energia_pib_ext %>%
+  filter(year <= 2016) %>%
+  filter(!is.na(fossil_share), !is.na(renewable_share), !is.na(population))
+
+# Revisar estructura final
+summary(energia_pib_final)
+range(energia_pib_final$year)
+
+# Guardar versión limpia y completa (1990–2016)
+write.csv(energia_pib_final, "energia_pib_multi_ext_1990_2016.csv", row.names = FALSE)
+
+
+# --- GRÁFICO EXPLORATORIO (solo datos completos 1990–2016) ---
+ggplot(energia_pib_final, aes(x = year)) +
+  geom_line(aes(y = fossil_share, color = "Fósil (%)")) +
+  geom_line(aes(y = renewable_share, color = "Renovable (%)")) +
+  facet_wrap(~country, scales = "free_y") +
+  labs(
+    title = "Participación de energías fósiles y renovables (1990–2016)",
+    subtitle = "Solo años con información completa para todas las variables",
+    y = "Porcentaje del total",
+    x = "Año",
+    color = ""
+  ) +
+  theme_minimal()
+
+```
+
+## 2. Análisis exploratorio  
+
+## 2.2 Análisis gráfico y evolución temporal de las variables.
+
+```{r}
+
+
+ggplot(energia_pib_multi, aes(x = year)) +
+  geom_line(aes(y = pib_pc, color = "PIB per cápita")) +
+  labs(
+    title = "Evolución del PIB per cápita en España (1990–2023)",
+    y = "PIB per cápita (USD constantes)",
+    x = "Año",
+    color = ""
+  ) +
+  theme_minimal()
+
+ggplot(energia_pib_multi, aes(x = year)) +
+  geom_line(aes(y = energia_pc, color = "Energía per cápita")) +
+  labs(
+    title = "Evolución del consumo energético per cápita en España (1990–2023)",
+    y = "Energía per cápita (kg eq. petróleo)",
+    x = "Año",
+    color = ""
+  ) +
+  theme_minimal()
+
+ggplot(energia_pib_final, aes(x = year)) +
+  geom_line(aes(y = fossil_share, color = "Fósil (%)")) +
+  geom_line(aes(y = renewable_share, color = "Renovable (%)")) +
+  labs(
+    title = "Participación de energías fósiles y renovables en España (1990–2016)",
+    y = "Porcentaje del total",
+    x = "Año",
+    color = ""
+  ) +
+  theme_minimal()
+```
+
+## 2.3) Identificación de posibles relaciones visuales entre ellas.
+
+```{r}
+ggplot(energia_pib_multi, aes(x = energia_pc, y = pib_pc)) +
+  geom_point(color = "blue", alpha = 0.7) +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(
+    title = "Relación entre el PIB per cápita y el consumo energético per cápita en España (1990–2023)",
+    x = "Energía per cápita (kg eq. petróleo)",
+    y = "PIB per cápita (USD constantes)"
+  ) +
+  theme_minimal()
+```
+
+## 3) Pruebas estadísticas iniciales
+
+## 3.1) Estacionariedad
+
+```{r}
+library(tidyverse)
+library(zoo)
+
+# Transformación Logarítmica
+energia_pib_multi <- energia_pib_multi %>%
+  mutate(
+    Lpib_pc = log(pib_pc),
+    Lenergia_pc = log(energia_pc)
+  )
+
+# Creación de Objetos 'ts' (Serie Temporal Anual) 
+Lpib_ts <- ts(energia_pib_multi$Lpib_pc, start = 1990, frequency = 1)
+Lenergia_ts <- ts(energia_pib_multi$Lenergia_pc, start = 1990, frequency = 1)
+
+library(urca)
+library(tseries)
+
+# Estacionariedad: ADF y KPSS
+summary(ur.df(Lpib_ts, type = "trend", selectlags = "AIC"))
+summary(ur.df(Lenergia_ts, type = "trend", selectlags = "AIC"))
+
+# Test KPSS
+kpss.test(Lpib_ts, null = "T") 
+kpss.test(Lenergia_ts, null = "T")
+```
+
+## 3.2) Normalidad, homocedasticidad y autocorrelación
+
+```{r}
+
+library(lmtest)   # Breusch-Pagan (bptest), Durbin-Watson (dwtest)
+library(tseries)  # Shapiro-Wilk 
+
+# Modelo de MCO (Relación de Cointegración Potencial)
+# Se asume que Lpib_ts y Lenergia_ts han sido creadas previamente.
+coint_reg <- lm(Lenergia_ts ~ Lpib_ts)
+summary(coint_reg)
+
+# Normalidad
+shapiro.test(residuals(coint_reg))
+
+# Autocorrelación (Durbin–Watson)
+dwtest(coint_reg)
+
+# Homocedasticidad (Breusch–Pagan)
+bptest(coint_reg)
+library(car) 
+
+```
+
+## 3.3) multicolinealidad
+
+```{r}
+
+data_vif <- data.frame(
+  Lenergia = as.numeric(Lenergia_ts),
+  Lpib = as.numeric(Lpib_ts),
+  Year = 1:length(Lpib_ts) 
+)
+
+modelo_vif <- lm(Lenergia ~ Lpib + Year, data = data_vif)
+
+
+# Test VIF
+vif(modelo_vif)
+```
+
+##  4) Modelos econométricos
+
+##  4.1) Aplicación de ARIMA y/o ARIMAX
+
+```{r}
+
+library(forecast)
+
+# Creamos las series diferenciadas (Δ)
+denergia <- diff(Lenergia_ts)
+dpib <- diff(Lpib_ts)
+
+# Modelo ARIMA (Univariante)
+modelo_arima <- auto.arima(denergia, stepwise = FALSE, approximation = FALSE, trace = TRUE)
+
+summary(modelo_arima)
+
+# ARIMAX
+
+library(forecast)
+denergia <- diff(Lenergia_ts)
+dpib <- diff(Lpib_ts)
+
+series_arimax <- na.omit(ts.intersect(denergia = denergia, dpib = dpib))
+
+# 2. Estimación del Modelo ARIMAX
+modelo_arimax <- auto.arima(series_arimax[, "denergia"],
+                            xreg = series_arimax[, "dpib"],
+                            stepwise = FALSE, approximation = FALSE, trace = FALSE) # Trace=FALSE para limpiar la salida
+summary(modelo_arimax)
+
+
+# Pronóstico de la Variación de la Energía con ARIMAX 
+
+h <- 5 # Pronóstico para los próximos 5 años
+
+# El 'future_dpib' se extrae del objeto 'series_arimax'
+future_dpib <- rep(tail(series_arimax[, "dpib"], 1), h) 
+
+# El pronóstico ahora sí tendrá el objeto 'modelo_arimax' disponible
+forecast_arimax <- forecast(modelo_arimax, xreg = future_dpib, h = h)
+
+# Visualización
+autoplot(forecast_arimax) +
+  labs(title = "Pronóstico de la Variación de Energía (ARIMAX)",
+       subtitle = paste("Asumiendo ΔLpib_pc constante en", round(future_dpib[1], 3)),
+       x = "Año", y = "ΔLenergia_pc") +
+  theme_minimal()
+
+
+```
+
+##  4.2) Prueba de cointegración -\> Engle-Granger
+
+```{r}
+# Prueba de Cointegración (Engle–Granger)
+
+
+library(urca)
+library(tseries)
+
+coint_reg <- lm(Lenergia_ts ~ Lpib_ts)
+
+res_coint <- residuals(coint_reg)
+
+summary(ur.df(res_coint, type="none", selectlags="AIC"))
+
+
+
+library(nlme)
+library(dplyr)
+library(zoo)
+
+# 1. Crear las series diferenciadas (Δ)
+denergia <- diff(Lenergia_ts)
+dpib <- diff(Lpib_ts)
+
+# 2. Crear el data frame con índice de tiempo para GLS
+datos_gls <- data.frame(
+  tiempo = 1:length(denergia),  # Índice temporal 1, 2, 3, ...
+  denergia = as.numeric(denergia),
+  dpib = as.numeric(dpib)
+)
+
+# Eliminar NAs introducidos por diff()
+datos_gls <- na.omit(datos_gls)
+
+
+# Modelo: ΔLenergia ~ ΔLpib con errores AR(1)
+modelo_gls_ar1 <- gls(
+  denergia ~ dpib,
+  correlation = corAR1(form = ~ tiempo), # Especifica la estructura AR(1) en los errores
+  method = "ML", # Máxima verosimilitud (recomendado para FGLS)
+  data = datos_gls
+)
+
+summary(modelo_gls_ar1)
+
+
+```
+
+## 5) Endogeneidad y variables instrumentales 
+
+##  5) Comprobar endogeneidad 
+
+```{r}
+ols_model <- lm(Lenergia ~ Lpib, data = df)
+summary(ols_model)
+
+# BLOQUE 1 — Preparación de variables
+df <- energia_pib_final %>%
+  mutate(
+    Lpib = log(pib_pc),
+    Lenergia = log(energia_pc)
+  ) %>%
+  select(Lpib, Lenergia, population, fossil_share, renewable_share)
+
+# BLOQUE 2 — Primera etapa del test de Wu–Hausman
+stage1 <- lm(Lpib ~ population + fossil_share + renewable_share, data = df)
+summary(stage1)
+
+# BLOQUE 3 — Obtener residuos
+df$uhat <- residuals(stage1)
+
+# BLOQUE 4 — Modelo auxiliar del test de endogeneidad
+hausman_aux <- lm(Lenergia ~ Lpib + uhat, data = df)
+summary(hausman_aux)
+
+```
+
+##  5.2) Minimos cuadrados en 2 etapas 
+
+```{r}
+stage1 <- lm(Lpib ~ population + fossil_share + renewable_share, data = df)
+df$Lpib_hat <- fitted(stage1)
+summary(stage1)
+iv_2sls <- lm(Lenergia ~ Lpib_hat, data = df)
+summary(iv_2sls)
+
+```
+
+##  5.3) Resultados de los diagnósticos
+
+```{r}
+summary(stage1)$fstatistic
+resid_iv <- residuals(iv_2sls)
+
+sargan_test <- lm(resid_iv ~ population + fossil_share + renewable_share, data = df)
+summary(sargan_test)
+
+```
+
+## 6) Interpretación y discusión de los resultados
+
+```{r}
+library(Metrics)
+
+# OLS
+pred_ols <- fitted(ols_model)
+rmse_ols <- rmse(df$Lenergia, pred_ols)
+mape_ols <- mape(df$Lenergia, pred_ols)
+adjr2_ols <- summary(ols_model)$adj.r.squared
+
+# 2SLS
+pred_iv <- fitted(iv_2sls)
+rmse_iv <- rmse(df$Lenergia, pred_iv)
+mape_iv <- mape(df$Lenergia, pred_iv)
+adjr2_iv <- summary(iv_2sls)$adj.r.squared
+
+# ARIMAX (diferencias)
+pred_arimax <- fitted(modelo_arimax)
+rmse_arimax <- rmse(series_arimax[, "denergia"], pred_arimax)
+mape_arimax <- mape(series_arimax[, "denergia"], pred_arimax)
+
+# GLS AR(1)
+pred_gls <- fitted(modelo_gls_ar1)
+rmse_gls <- rmse(series_arimax[, "denergia"], pred_gls)
+mape_gls <- mape(series_arimax[, "denergia"], pred_gls)
+
+```
